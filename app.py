@@ -1,19 +1,28 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from ultralytics import YOLO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import io
 import base64
 import os
-import json
+import requests
+
+MODEL_URL = "https://huggingface.co/yaseen113/microplastic-model/resolve/main/last.pt"
+MODEL_PATH = "last.pt"
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 
-# Load model once at startup
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "last.pt")
+# Download model first
+if not os.path.exists(MODEL_PATH):
+    print("Downloading model...")
+    r = requests.get(MODEL_URL)
+    with open(MODEL_PATH, "wb") as f:
+        f.write(r.content)
+
+print("Loading model...")
 model = YOLO(MODEL_PATH)
-print(f"✅ Model loaded | Classes: {model.names}")
+print("Model loaded")
 
 @app.route("/")
 def index():
@@ -28,7 +37,7 @@ def detect():
     img_bytes = file.read()
     image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
-    # Run inference
+  
     results = model(image, conf=0.25)
     result = results[0]
 
@@ -44,10 +53,10 @@ def detect():
             cls_id = int(box.cls[0])
             label = model.names[cls_id]
 
-            # Draw bounding box
+           
             draw.rectangle([x1, y1, x2, y2], outline="#00FFCC", width=3)
             
-            # Draw label background
+          
             text = f"{label} {conf:.0%}"
             text_bbox = draw.textbbox((x1, y1 - 22), text)
             draw.rectangle(text_bbox, fill="#00FFCC")
@@ -61,7 +70,7 @@ def detect():
                 "height_px": round(y2 - y1),
             })
 
-    # Encode annotated image to base64
+   
     buf = io.BytesIO()
     annotated_image.save(buf, format="PNG")
     encoded = base64.b64encode(buf.getvalue()).decode("utf-8")
