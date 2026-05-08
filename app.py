@@ -11,7 +11,7 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 
 # Load model once at startup
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "best.pt")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "last.pt")
 model = YOLO(MODEL_PATH)
 print(f"✅ Model loaded | Classes: {model.names}")
 
